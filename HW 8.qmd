@@ -488,6 +488,7 @@ numeric_long <- seoul_tbl |>
 #Split the Data
 
 ```{r}
+library(rsample)
 #Use functions from tidymodels to split the data into a training and test set (75/25 split). Use the strata argument to stratify the split on the seasons variable.
 set.seed(10)
 seoul_split <- initial_split(seoul_tbl, prop = 0.75, strata = season)
@@ -497,27 +498,7 @@ seoul_train
 
 seoul_test 
 #On the training set, create a 10 fold CV split
-
-get_cv_splits <- function(data, num_folds){
-  #get fold size
-  size_fold <- floor(nrow(data)/num_folds)
-  #get random indices to subset the data with
-  random_indices <- sample(1:nrow(data), size = nrow(data), replace = FALSE)
-  #create a list to save our folds in
-  folds <- list()
-  #now cycle through our random indices vector and take the appropriate observations to each fold
-  for(i in 1:num_folds){
-    if (i < num_folds) {
-      fold_index <- seq(from = (i-1)*size_fold +1, to = i*size_fold, by = 1)
-      folds[[i]] <- data[random_indices[fold_index], ]
-    } else {
-      fold_index <- seq(from = (i-1)*size_fold +1, to = length(random_indices), by = 1)
-      folds[[i]] <- data[random_indices[fold_index], ]
-    }
-  }
-  return(folds)
-}
-folds <- get_cv_splits(seoul_train, 10)
+folds <- rsample::vfold_cv(seoul_train, v = 10, strata = season)
 ```
 
 ##Fitting MLR Models
@@ -563,7 +544,6 @@ recipe(day_bike_rentals ~ ., data = seoul_tbl) |>
 second_prep <- prep(second_rec)
 second_data <-bake(second_prep, new_data = NULL)
 ```
-```
 #3rd recipe:
 
 ```{r}
@@ -580,13 +560,102 @@ recipe(day_bike_rentals ~ ., data = seoul_tbl) |>
  step_interact(terms = ~ starts_with("season_") *  starts_with("holiday_")) |>
   step_interact(terms = ~ starts_with("season_") * day_temp)|>
   step_interact(terms = ~ day_temp * day_rainfall)|>
-  step_normalize(all_numeric())
+  step_normalize(all_numeric())|>
 
   
 #adding in the quadratics
-  step_poly(all_numeric_predictors(), degree = 2, options = list(raw = TRUE))
+step_poly(all_numeric_predictors(), degree = 2, options = list(raw = TRUE))
 
 
 third_prep <- prep(third_rec)
-thid_data <-bake(third_prep, new_data = NULL)
+third_data <-bake(third_prep, new_data = NULL)
+```
+
+
+#setting up models
+
+```{r}
+#Now set up our linear model fit to use the “lm” engine.
+#for first one
+first_mod<-linear_reg() %>%
+ set_engine("lm") %>%
+ translate()
+ 
+ first_wfl <- workflow() |>
+ add_recipe(first_rec) |>
+ add_model(first_mod)
+
+ #do the resamples with the cv
+ cv_results <- fit_resamples(
+  first_wfl,
+  resamples =folds,
+  metrics = metric_set(rmse)
+)
+ collect_metrics(cv_results)
+
+first_fit <- first_wfl |>
+ fit(seoul_train)
+first_fit |>
+ tidy()
+
+#for second one
+sec_mod<-linear_reg() %>%
+ set_engine("lm") %>%
+ translate()
+ 
+sec_wfl <- workflow() |>
+ add_recipe(second_rec) |>
+ add_model(sec_mod)
+
+ #do the resamples with the cv
+ sec_cv_results <- fit_resamples(
+ sec_wfl,
+  resamples =folds,
+  metrics = metric_set(rmse)
+)
+ collect_metrics(sec_cv_results)
+
+sec_fit <- sec_wfl |>
+ fit(seoul_train)
+sec_fit |>
+ tidy()
+
+
+#for third one
+third_mod<-linear_reg() %>%
+ set_engine("lm") %>%
+ translate()
+ 
+third_wfl <- workflow() |>
+ add_recipe(third_rec) |>
+ add_model(third_mod)
+
+ #do the resamples with the cv
+ third_cv_results <- fit_resamples(
+ third_wfl,
+  resamples =folds,
+  metrics = metric_set(rmse)
+)
+ collect_metrics(third_cv_results)
+
+third_fit <- third_wfl |>
+ fit(seoul_train)
+sec_fit |>
+ tidy()
+
+```
+Second model appears best since it has the lowest mean RSME so we will use that for the final model!
+
+```{r}
+best_fit <- last_fit(sec_wfl, split = seoul_split, metrics = metric_set(rmse))
+
+collect_metrics(best_fit)
+
+collect_predictions(best_fit)
+
+final_model <- extract_fit_parsnip(best_fit$.workflow[[1]])
+
+tidy(final_model)
+
+tidy(best_fit)
 ```
