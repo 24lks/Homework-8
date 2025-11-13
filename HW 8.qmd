@@ -656,6 +656,4 @@ collect_predictions(best_fit)
 final_model <- extract_fit_parsnip(best_fit$.workflow[[1]])
 
 tidy(final_model)
-
-tidy(best_fit)
 ```

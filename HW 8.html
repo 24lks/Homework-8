@@ -98,14 +98,6 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </header>
 
 
-<section id="quarto" class="level2">
-<h2 class="anchored" data-anchor-id="quarto">Quarto</h2>
-<p>Quarto enables you to weave together content and executable code into a finished document. To learn more about Quarto see <a href="https://quarto.org" class="uri">https://quarto.org</a>.</p>
-</section>
-<section id="running-code" class="level2">
-<h2 class="anchored" data-anchor-id="running-code">Running Code</h2>
-<p>When you click the <strong>Render</strong> button a document will be generated that includes both content and the output of embedded code. You can embed code like this:</p>
-<p>#Reading Data</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stderr">
@@ -1154,12 +1146,13 @@ day_temp          1.00000000</code></pre>
 </div>
 <p>#Split the Data</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb130"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb130-1"><a href="#cb130-1" aria-hidden="true" tabindex="-1"></a><span class="co">#Use functions from tidymodels to split the data into a training and test set (75/25 split). Use the strata argument to stratify the split on the seasons variable.</span></span>
-<span id="cb130-2"><a href="#cb130-2" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">10</span>)</span>
-<span id="cb130-3"><a href="#cb130-3" aria-hidden="true" tabindex="-1"></a>seoul_split <span class="ot">&lt;-</span> <span class="fu">initial_split</span>(seoul_tbl, <span class="at">prop =</span> <span class="fl">0.75</span>, <span class="at">strata =</span> season)</span>
-<span id="cb130-4"><a href="#cb130-4" aria-hidden="true" tabindex="-1"></a>seoul_train <span class="ot">&lt;-</span> <span class="fu">training</span>(seoul_split)</span>
-<span id="cb130-5"><a href="#cb130-5" aria-hidden="true" tabindex="-1"></a>seoul_test <span class="ot">&lt;-</span> <span class="fu">testing</span>(seoul_split)</span>
-<span id="cb130-6"><a href="#cb130-6" aria-hidden="true" tabindex="-1"></a>seoul_train</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb130"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb130-1"><a href="#cb130-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(rsample)</span>
+<span id="cb130-2"><a href="#cb130-2" aria-hidden="true" tabindex="-1"></a><span class="co">#Use functions from tidymodels to split the data into a training and test set (75/25 split). Use the strata argument to stratify the split on the seasons variable.</span></span>
+<span id="cb130-3"><a href="#cb130-3" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">10</span>)</span>
+<span id="cb130-4"><a href="#cb130-4" aria-hidden="true" tabindex="-1"></a>seoul_split <span class="ot">&lt;-</span> <span class="fu">initial_split</span>(seoul_tbl, <span class="at">prop =</span> <span class="fl">0.75</span>, <span class="at">strata =</span> season)</span>
+<span id="cb130-5"><a href="#cb130-5" aria-hidden="true" tabindex="-1"></a>seoul_train <span class="ot">&lt;-</span> <span class="fu">training</span>(seoul_split)</span>
+<span id="cb130-6"><a href="#cb130-6" aria-hidden="true" tabindex="-1"></a>seoul_test <span class="ot">&lt;-</span> <span class="fu">testing</span>(seoul_split)</span>
+<span id="cb130-7"><a href="#cb130-7" aria-hidden="true" tabindex="-1"></a>seoul_train</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code># A tibble: 273 × 12
 # Groups:   Date, season [273]
@@ -1200,34 +1193,277 @@ day_temp          1.00000000</code></pre>
 #   day_dew_temp &lt;dbl&gt;, day_solar_rad &lt;dbl&gt;</code></pre>
 </div>
 <div class="sourceCode cell-code" id="cb134"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb134-1"><a href="#cb134-1" aria-hidden="true" tabindex="-1"></a><span class="co">#On the training set, create a 10 fold CV split</span></span>
-<span id="cb134-2"><a href="#cb134-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb134-3"><a href="#cb134-3" aria-hidden="true" tabindex="-1"></a>get_cv_splits <span class="ot">&lt;-</span> <span class="cf">function</span>(data, num_folds){</span>
-<span id="cb134-4"><a href="#cb134-4" aria-hidden="true" tabindex="-1"></a>  <span class="co">#get fold size</span></span>
-<span id="cb134-5"><a href="#cb134-5" aria-hidden="true" tabindex="-1"></a>  size_fold <span class="ot">&lt;-</span> <span class="fu">floor</span>(<span class="fu">nrow</span>(data)<span class="sc">/</span>num_folds)</span>
-<span id="cb134-6"><a href="#cb134-6" aria-hidden="true" tabindex="-1"></a>  <span class="co">#get random indices to subset the data with</span></span>
-<span id="cb134-7"><a href="#cb134-7" aria-hidden="true" tabindex="-1"></a>  random_indices <span class="ot">&lt;-</span> <span class="fu">sample</span>(<span class="dv">1</span><span class="sc">:</span><span class="fu">nrow</span>(data), <span class="at">size =</span> <span class="fu">nrow</span>(data), <span class="at">replace =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb134-8"><a href="#cb134-8" aria-hidden="true" tabindex="-1"></a>  <span class="co">#create a list to save our folds in</span></span>
-<span id="cb134-9"><a href="#cb134-9" aria-hidden="true" tabindex="-1"></a>  folds <span class="ot">&lt;-</span> <span class="fu">list</span>()</span>
-<span id="cb134-10"><a href="#cb134-10" aria-hidden="true" tabindex="-1"></a>  <span class="co">#now cycle through our random indices vector and take the appropriate observations to each fold</span></span>
-<span id="cb134-11"><a href="#cb134-11" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>num_folds){</span>
-<span id="cb134-12"><a href="#cb134-12" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (i <span class="sc">&lt;</span> num_folds) {</span>
-<span id="cb134-13"><a href="#cb134-13" aria-hidden="true" tabindex="-1"></a>      fold_index <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="at">from =</span> (i<span class="dv">-1</span>)<span class="sc">*</span>size_fold <span class="sc">+</span><span class="dv">1</span>, <span class="at">to =</span> i<span class="sc">*</span>size_fold, <span class="at">by =</span> <span class="dv">1</span>)</span>
-<span id="cb134-14"><a href="#cb134-14" aria-hidden="true" tabindex="-1"></a>      folds[[i]] <span class="ot">&lt;-</span> data[random_indices[fold_index], ]</span>
-<span id="cb134-15"><a href="#cb134-15" aria-hidden="true" tabindex="-1"></a>    } <span class="cf">else</span> {</span>
-<span id="cb134-16"><a href="#cb134-16" aria-hidden="true" tabindex="-1"></a>      fold_index <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="at">from =</span> (i<span class="dv">-1</span>)<span class="sc">*</span>size_fold <span class="sc">+</span><span class="dv">1</span>, <span class="at">to =</span> <span class="fu">length</span>(random_indices), <span class="at">by =</span> <span class="dv">1</span>)</span>
-<span id="cb134-17"><a href="#cb134-17" aria-hidden="true" tabindex="-1"></a>      folds[[i]] <span class="ot">&lt;-</span> data[random_indices[fold_index], ]</span>
-<span id="cb134-18"><a href="#cb134-18" aria-hidden="true" tabindex="-1"></a>    }</span>
-<span id="cb134-19"><a href="#cb134-19" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb134-20"><a href="#cb134-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(folds)</span>
-<span id="cb134-21"><a href="#cb134-21" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb134-22"><a href="#cb134-22" aria-hidden="true" tabindex="-1"></a>folds <span class="ot">&lt;-</span> <span class="fu">get_cv_splits</span>(seoul_train, <span class="dv">10</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb134-2"><a href="#cb134-2" aria-hidden="true" tabindex="-1"></a>folds <span class="ot">&lt;-</span> rsample<span class="sc">::</span><span class="fu">vfold_cv</span>(seoul_train, <span class="at">v =</span> <span class="dv">10</span>, <span class="at">strata =</span> season)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>##Fitting MLR Models</p>
-</section>
-<section id="st-recipe" class="level1">
-<h1>1st recipe</h1>
-<p>first_rec&lt;- recipe(day_bike_rentals ~ ., data = seoul_tbl) |&gt; #creating a week day weeend factor step_rm(Date)|&gt; step_mutate( day_type = factor(if_else(wday(ymd(Date), label = TRUE) %in% c(“Sat”, “Sun”), “Weekend”, “Weekday”)) ) |&gt; step_rm(Date)|&gt; #normaizing the numeric step_normalize(all_numeric())|&gt; step_dummy(newseason, newholiday, newdate)</p>
-</section>
+<p>#1st recipe</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb135"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb135-1"><a href="#cb135-1" aria-hidden="true" tabindex="-1"></a>first_rec<span class="ot">&lt;-</span></span>
+<span id="cb135-2"><a href="#cb135-2" aria-hidden="true" tabindex="-1"></a><span class="fu">recipe</span>(day_bike_rentals <span class="sc">~</span> ., <span class="at">data =</span> seoul_tbl) <span class="sc">|&gt;</span></span>
+<span id="cb135-3"><a href="#cb135-3" aria-hidden="true" tabindex="-1"></a>  <span class="co">#creating a week day weeend factor</span></span>
+<span id="cb135-4"><a href="#cb135-4" aria-hidden="true" tabindex="-1"></a> <span class="fu">step_mutate</span>(</span>
+<span id="cb135-5"><a href="#cb135-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">day_type =</span> <span class="fu">factor</span>(<span class="fu">if_else</span>(<span class="fu">wday</span>(<span class="fu">ymd</span>(Date), <span class="at">label =</span> <span class="cn">TRUE</span>) <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">"Sat"</span>, <span class="st">"Sun"</span>), <span class="st">"Weekend"</span>, <span class="st">"Weekday"</span>))</span>
+<span id="cb135-6"><a href="#cb135-6" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">|&gt;</span></span>
+<span id="cb135-7"><a href="#cb135-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">step_rm</span>(Date)<span class="sc">|&gt;</span></span>
+<span id="cb135-8"><a href="#cb135-8" aria-hidden="true" tabindex="-1"></a><span class="co">#normaizing the numeric</span></span>
+<span id="cb135-9"><a href="#cb135-9" aria-hidden="true" tabindex="-1"></a><span class="fu">step_normalize</span>(<span class="fu">all_numeric</span>())<span class="sc">|&gt;</span></span>
+<span id="cb135-10"><a href="#cb135-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">step_dummy</span>(season, holiday, day_type) </span>
+<span id="cb135-11"><a href="#cb135-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb135-12"><a href="#cb135-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb135-13"><a href="#cb135-13" aria-hidden="true" tabindex="-1"></a>first_prep <span class="ot">&lt;-</span> <span class="fu">prep</span>(first_rec)</span>
+<span id="cb135-14"><a href="#cb135-14" aria-hidden="true" tabindex="-1"></a>first_data <span class="ot">&lt;-</span><span class="fu">bake</span>(first_prep, <span class="at">new_data =</span> <span class="cn">NULL</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>#2nd recipe:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb136"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb136-1"><a href="#cb136-1" aria-hidden="true" tabindex="-1"></a>second_rec<span class="ot">&lt;-</span></span>
+<span id="cb136-2"><a href="#cb136-2" aria-hidden="true" tabindex="-1"></a><span class="fu">recipe</span>(day_bike_rentals <span class="sc">~</span> ., <span class="at">data =</span> seoul_tbl) <span class="sc">|&gt;</span></span>
+<span id="cb136-3"><a href="#cb136-3" aria-hidden="true" tabindex="-1"></a>  <span class="co">#creating a week day weeend factor</span></span>
+<span id="cb136-4"><a href="#cb136-4" aria-hidden="true" tabindex="-1"></a> <span class="fu">step_mutate</span>(</span>
+<span id="cb136-5"><a href="#cb136-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">day_type =</span> <span class="fu">factor</span>(<span class="fu">if_else</span>(<span class="fu">wday</span>(<span class="fu">ymd</span>(Date), <span class="at">label =</span> <span class="cn">TRUE</span>) <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">"Sat"</span>, <span class="st">"Sun"</span>), <span class="st">"Weekend"</span>, <span class="st">"Weekday"</span>))</span>
+<span id="cb136-6"><a href="#cb136-6" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">|&gt;</span></span>
+<span id="cb136-7"><a href="#cb136-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">step_rm</span>(Date)<span class="sc">|&gt;</span></span>
+<span id="cb136-8"><a href="#cb136-8" aria-hidden="true" tabindex="-1"></a><span class="co">#normaizing the numeric</span></span>
+<span id="cb136-9"><a href="#cb136-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">step_dummy</span>(season, holiday, day_type) <span class="sc">|&gt;</span></span>
+<span id="cb136-10"><a href="#cb136-10" aria-hidden="true" tabindex="-1"></a>  <span class="co">#addng in interaction</span></span>
+<span id="cb136-11"><a href="#cb136-11" aria-hidden="true" tabindex="-1"></a> <span class="fu">step_interact</span>(<span class="at">terms =</span> <span class="sc">~</span> <span class="fu">starts_with</span>(<span class="st">"season_"</span>) <span class="sc">*</span>  <span class="fu">starts_with</span>(<span class="st">"holiday_"</span>)) <span class="sc">|&gt;</span></span>
+<span id="cb136-12"><a href="#cb136-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">step_interact</span>(<span class="at">terms =</span> <span class="sc">~</span> <span class="fu">starts_with</span>(<span class="st">"season_"</span>) <span class="sc">*</span> day_temp)<span class="sc">|&gt;</span></span>
+<span id="cb136-13"><a href="#cb136-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">step_interact</span>(<span class="at">terms =</span> <span class="sc">~</span> day_temp <span class="sc">*</span> day_rainfall)<span class="sc">|&gt;</span></span>
+<span id="cb136-14"><a href="#cb136-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">step_normalize</span>(<span class="fu">all_numeric</span>())</span>
+<span id="cb136-15"><a href="#cb136-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb136-16"><a href="#cb136-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb136-17"><a href="#cb136-17" aria-hidden="true" tabindex="-1"></a>second_prep <span class="ot">&lt;-</span> <span class="fu">prep</span>(second_rec)</span>
+<span id="cb136-18"><a href="#cb136-18" aria-hidden="true" tabindex="-1"></a>second_data <span class="ot">&lt;-</span><span class="fu">bake</span>(second_prep, <span class="at">new_data =</span> <span class="cn">NULL</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>#3rd recipe:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb137"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb137-1"><a href="#cb137-1" aria-hidden="true" tabindex="-1"></a>third_rec<span class="ot">&lt;-</span></span>
+<span id="cb137-2"><a href="#cb137-2" aria-hidden="true" tabindex="-1"></a><span class="fu">recipe</span>(day_bike_rentals <span class="sc">~</span> ., <span class="at">data =</span> seoul_tbl) <span class="sc">|&gt;</span></span>
+<span id="cb137-3"><a href="#cb137-3" aria-hidden="true" tabindex="-1"></a>  <span class="co">#creating a week day weeend factor</span></span>
+<span id="cb137-4"><a href="#cb137-4" aria-hidden="true" tabindex="-1"></a> <span class="fu">step_mutate</span>(</span>
+<span id="cb137-5"><a href="#cb137-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">day_type =</span> <span class="fu">factor</span>(<span class="fu">if_else</span>(<span class="fu">wday</span>(<span class="fu">ymd</span>(Date), <span class="at">label =</span> <span class="cn">TRUE</span>) <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">"Sat"</span>, <span class="st">"Sun"</span>), <span class="st">"Weekend"</span>, <span class="st">"Weekday"</span>))</span>
+<span id="cb137-6"><a href="#cb137-6" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">|&gt;</span></span>
+<span id="cb137-7"><a href="#cb137-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">step_rm</span>(Date)<span class="sc">|&gt;</span></span>
+<span id="cb137-8"><a href="#cb137-8" aria-hidden="true" tabindex="-1"></a><span class="co">#normaizing the numeric</span></span>
+<span id="cb137-9"><a href="#cb137-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">step_dummy</span>(season, holiday, day_type) <span class="sc">|&gt;</span></span>
+<span id="cb137-10"><a href="#cb137-10" aria-hidden="true" tabindex="-1"></a>  <span class="co">#addng in interaction</span></span>
+<span id="cb137-11"><a href="#cb137-11" aria-hidden="true" tabindex="-1"></a> <span class="fu">step_interact</span>(<span class="at">terms =</span> <span class="sc">~</span> <span class="fu">starts_with</span>(<span class="st">"season_"</span>) <span class="sc">*</span>  <span class="fu">starts_with</span>(<span class="st">"holiday_"</span>)) <span class="sc">|&gt;</span></span>
+<span id="cb137-12"><a href="#cb137-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">step_interact</span>(<span class="at">terms =</span> <span class="sc">~</span> <span class="fu">starts_with</span>(<span class="st">"season_"</span>) <span class="sc">*</span> day_temp)<span class="sc">|&gt;</span></span>
+<span id="cb137-13"><a href="#cb137-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">step_interact</span>(<span class="at">terms =</span> <span class="sc">~</span> day_temp <span class="sc">*</span> day_rainfall)<span class="sc">|&gt;</span></span>
+<span id="cb137-14"><a href="#cb137-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">step_normalize</span>(<span class="fu">all_numeric</span>())<span class="sc">|&gt;</span></span>
+<span id="cb137-15"><a href="#cb137-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb137-16"><a href="#cb137-16" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb137-17"><a href="#cb137-17" aria-hidden="true" tabindex="-1"></a><span class="co">#adding in the quadratics</span></span>
+<span id="cb137-18"><a href="#cb137-18" aria-hidden="true" tabindex="-1"></a><span class="fu">step_poly</span>(<span class="fu">all_numeric_predictors</span>(), <span class="at">degree =</span> <span class="dv">2</span>, <span class="at">options =</span> <span class="fu">list</span>(<span class="at">raw =</span> <span class="cn">TRUE</span>))</span>
+<span id="cb137-19"><a href="#cb137-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb137-20"><a href="#cb137-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb137-21"><a href="#cb137-21" aria-hidden="true" tabindex="-1"></a>third_prep <span class="ot">&lt;-</span> <span class="fu">prep</span>(third_rec)</span>
+<span id="cb137-22"><a href="#cb137-22" aria-hidden="true" tabindex="-1"></a>third_data <span class="ot">&lt;-</span><span class="fu">bake</span>(third_prep, <span class="at">new_data =</span> <span class="cn">NULL</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>#setting up models</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb138"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb138-1"><a href="#cb138-1" aria-hidden="true" tabindex="-1"></a><span class="co">#Now set up our linear model fit to use the “lm” engine.</span></span>
+<span id="cb138-2"><a href="#cb138-2" aria-hidden="true" tabindex="-1"></a><span class="co">#for first one</span></span>
+<span id="cb138-3"><a href="#cb138-3" aria-hidden="true" tabindex="-1"></a>first_mod<span class="ot">&lt;-</span><span class="fu">linear_reg</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb138-4"><a href="#cb138-4" aria-hidden="true" tabindex="-1"></a> <span class="fu">set_engine</span>(<span class="st">"lm"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb138-5"><a href="#cb138-5" aria-hidden="true" tabindex="-1"></a> <span class="fu">translate</span>()</span>
+<span id="cb138-6"><a href="#cb138-6" aria-hidden="true" tabindex="-1"></a> </span>
+<span id="cb138-7"><a href="#cb138-7" aria-hidden="true" tabindex="-1"></a> first_wfl <span class="ot">&lt;-</span> <span class="fu">workflow</span>() <span class="sc">|&gt;</span></span>
+<span id="cb138-8"><a href="#cb138-8" aria-hidden="true" tabindex="-1"></a> <span class="fu">add_recipe</span>(first_rec) <span class="sc">|&gt;</span></span>
+<span id="cb138-9"><a href="#cb138-9" aria-hidden="true" tabindex="-1"></a> <span class="fu">add_model</span>(first_mod)</span>
+<span id="cb138-10"><a href="#cb138-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb138-11"><a href="#cb138-11" aria-hidden="true" tabindex="-1"></a> <span class="co">#do the resamples with the cv</span></span>
+<span id="cb138-12"><a href="#cb138-12" aria-hidden="true" tabindex="-1"></a> cv_results <span class="ot">&lt;-</span> <span class="fu">fit_resamples</span>(</span>
+<span id="cb138-13"><a href="#cb138-13" aria-hidden="true" tabindex="-1"></a>  first_wfl,</span>
+<span id="cb138-14"><a href="#cb138-14" aria-hidden="true" tabindex="-1"></a>  <span class="at">resamples =</span>folds,</span>
+<span id="cb138-15"><a href="#cb138-15" aria-hidden="true" tabindex="-1"></a>  <span class="at">metrics =</span> <span class="fu">metric_set</span>(rmse)</span>
+<span id="cb138-16"><a href="#cb138-16" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb138-17"><a href="#cb138-17" aria-hidden="true" tabindex="-1"></a> <span class="fu">collect_metrics</span>(cv_results)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 1 × 6
+  .metric .estimator  mean     n std_err .config        
+  &lt;chr&gt;   &lt;chr&gt;      &lt;dbl&gt; &lt;int&gt;   &lt;dbl&gt; &lt;chr&gt;          
+1 rmse    standard   0.566    10  0.0528 pre0_mod0_post0</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb140"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb140-1"><a href="#cb140-1" aria-hidden="true" tabindex="-1"></a>first_fit <span class="ot">&lt;-</span> first_wfl <span class="sc">|&gt;</span></span>
+<span id="cb140-2"><a href="#cb140-2" aria-hidden="true" tabindex="-1"></a> <span class="fu">fit</span>(seoul_train)</span>
+<span id="cb140-3"><a href="#cb140-3" aria-hidden="true" tabindex="-1"></a>first_fit <span class="sc">|&gt;</span></span>
+<span id="cb140-4"><a href="#cb140-4" aria-hidden="true" tabindex="-1"></a> <span class="fu">tidy</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 14 × 5
+   term               estimate std.error statistic      p.value
+   &lt;chr&gt;                 &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt;        &lt;dbl&gt;
+ 1 (Intercept)         0.0145     0.153     0.0947 0.925       
+ 2 day_rainfall       -0.153      0.0447   -3.43   0.000707    
+ 3 day_snowfall       -0.0177     0.0373   -0.474  0.636       
+ 4 day_temp           -0.0689     0.645    -0.107  0.915       
+ 5 day_humidity       -0.171      0.249    -0.689  0.492       
+ 6 day_wind           -0.0962     0.0407   -2.37   0.0187      
+ 7 day_visibility     -0.0337     0.0509   -0.661  0.509       
+ 8 day_dew_temp        0.424      0.758     0.559  0.577       
+ 9 day_solar_rad       0.345      0.0624    5.54   0.0000000761
+10 season_Spring      -0.325      0.111    -2.92   0.00382     
+11 season_Summer       0.00204    0.138     0.0148 0.988       
+12 season_Winter      -0.709      0.152    -4.67   0.00000482  
+13 holiday_No.Holiday  0.314      0.145     2.16   0.0313      
+14 day_type_Weekend   -0.186      0.0762   -2.43   0.0156      </code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb142"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb142-1"><a href="#cb142-1" aria-hidden="true" tabindex="-1"></a><span class="co">#for second one</span></span>
+<span id="cb142-2"><a href="#cb142-2" aria-hidden="true" tabindex="-1"></a>sec_mod<span class="ot">&lt;-</span><span class="fu">linear_reg</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb142-3"><a href="#cb142-3" aria-hidden="true" tabindex="-1"></a> <span class="fu">set_engine</span>(<span class="st">"lm"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb142-4"><a href="#cb142-4" aria-hidden="true" tabindex="-1"></a> <span class="fu">translate</span>()</span>
+<span id="cb142-5"><a href="#cb142-5" aria-hidden="true" tabindex="-1"></a> </span>
+<span id="cb142-6"><a href="#cb142-6" aria-hidden="true" tabindex="-1"></a>sec_wfl <span class="ot">&lt;-</span> <span class="fu">workflow</span>() <span class="sc">|&gt;</span></span>
+<span id="cb142-7"><a href="#cb142-7" aria-hidden="true" tabindex="-1"></a> <span class="fu">add_recipe</span>(second_rec) <span class="sc">|&gt;</span></span>
+<span id="cb142-8"><a href="#cb142-8" aria-hidden="true" tabindex="-1"></a> <span class="fu">add_model</span>(sec_mod)</span>
+<span id="cb142-9"><a href="#cb142-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb142-10"><a href="#cb142-10" aria-hidden="true" tabindex="-1"></a> <span class="co">#do the resamples with the cv</span></span>
+<span id="cb142-11"><a href="#cb142-11" aria-hidden="true" tabindex="-1"></a> sec_cv_results <span class="ot">&lt;-</span> <span class="fu">fit_resamples</span>(</span>
+<span id="cb142-12"><a href="#cb142-12" aria-hidden="true" tabindex="-1"></a> sec_wfl,</span>
+<span id="cb142-13"><a href="#cb142-13" aria-hidden="true" tabindex="-1"></a>  <span class="at">resamples =</span>folds,</span>
+<span id="cb142-14"><a href="#cb142-14" aria-hidden="true" tabindex="-1"></a>  <span class="at">metrics =</span> <span class="fu">metric_set</span>(rmse)</span>
+<span id="cb142-15"><a href="#cb142-15" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>→ A | warning: prediction from rank-deficient fit; consider predict(., rankdeficient="NA")</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>There were issues with some computations   A: x1</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>There were issues with some computations   A: x4</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code></code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb147"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb147-1"><a href="#cb147-1" aria-hidden="true" tabindex="-1"></a> <span class="fu">collect_metrics</span>(sec_cv_results)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 1 × 6
+  .metric .estimator  mean     n std_err .config        
+  &lt;chr&gt;   &lt;chr&gt;      &lt;dbl&gt; &lt;int&gt;   &lt;dbl&gt; &lt;chr&gt;          
+1 rmse    standard   0.497    10  0.0562 pre0_mod0_post0</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb149"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb149-1"><a href="#cb149-1" aria-hidden="true" tabindex="-1"></a>sec_fit <span class="ot">&lt;-</span> sec_wfl <span class="sc">|&gt;</span></span>
+<span id="cb149-2"><a href="#cb149-2" aria-hidden="true" tabindex="-1"></a> <span class="fu">fit</span>(seoul_train)</span>
+<span id="cb149-3"><a href="#cb149-3" aria-hidden="true" tabindex="-1"></a>sec_fit <span class="sc">|&gt;</span></span>
+<span id="cb149-4"><a href="#cb149-4" aria-hidden="true" tabindex="-1"></a> <span class="fu">tidy</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 24 × 5
+   term            estimate std.error statistic    p.value
+   &lt;chr&gt;              &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt;      &lt;dbl&gt;
+ 1 (Intercept)    -9.61e-16    0.0302 -3.18e-14 1.00      
+ 2 day_rainfall   -1.47e- 1    0.116  -1.27e+ 0 0.204     
+ 3 day_snowfall   -9.86e- 3    0.0333 -2.96e- 1 0.768     
+ 4 day_temp       -6.24e- 2    0.610  -1.02e- 1 0.919     
+ 5 day_humidity   -2.34e- 1    0.231  -1.01e+ 0 0.312     
+ 6 day_wind       -7.78e- 2    0.0381 -2.04e+ 0 0.0422    
+ 7 day_visibility  9.94e- 3    0.0499  1.99e- 1 0.842     
+ 8 day_dew_temp    5.36e- 1    0.701   7.64e- 1 0.446     
+ 9 day_solar_rad   2.84e- 1    0.0573  4.95e+ 0 0.00000139
+10 season_Spring  -1.85e- 1    0.263  -7.04e- 1 0.482     
+# ℹ 14 more rows</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb151"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb151-1"><a href="#cb151-1" aria-hidden="true" tabindex="-1"></a><span class="co">#for third one</span></span>
+<span id="cb151-2"><a href="#cb151-2" aria-hidden="true" tabindex="-1"></a>third_mod<span class="ot">&lt;-</span><span class="fu">linear_reg</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb151-3"><a href="#cb151-3" aria-hidden="true" tabindex="-1"></a> <span class="fu">set_engine</span>(<span class="st">"lm"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb151-4"><a href="#cb151-4" aria-hidden="true" tabindex="-1"></a> <span class="fu">translate</span>()</span>
+<span id="cb151-5"><a href="#cb151-5" aria-hidden="true" tabindex="-1"></a> </span>
+<span id="cb151-6"><a href="#cb151-6" aria-hidden="true" tabindex="-1"></a>third_wfl <span class="ot">&lt;-</span> <span class="fu">workflow</span>() <span class="sc">|&gt;</span></span>
+<span id="cb151-7"><a href="#cb151-7" aria-hidden="true" tabindex="-1"></a> <span class="fu">add_recipe</span>(third_rec) <span class="sc">|&gt;</span></span>
+<span id="cb151-8"><a href="#cb151-8" aria-hidden="true" tabindex="-1"></a> <span class="fu">add_model</span>(third_mod)</span>
+<span id="cb151-9"><a href="#cb151-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb151-10"><a href="#cb151-10" aria-hidden="true" tabindex="-1"></a> <span class="co">#do the resamples with the cv</span></span>
+<span id="cb151-11"><a href="#cb151-11" aria-hidden="true" tabindex="-1"></a> third_cv_results <span class="ot">&lt;-</span> <span class="fu">fit_resamples</span>(</span>
+<span id="cb151-12"><a href="#cb151-12" aria-hidden="true" tabindex="-1"></a> third_wfl,</span>
+<span id="cb151-13"><a href="#cb151-13" aria-hidden="true" tabindex="-1"></a>  <span class="at">resamples =</span>folds,</span>
+<span id="cb151-14"><a href="#cb151-14" aria-hidden="true" tabindex="-1"></a>  <span class="at">metrics =</span> <span class="fu">metric_set</span>(rmse)</span>
+<span id="cb151-15"><a href="#cb151-15" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>→ A | warning: prediction from rank-deficient fit; consider predict(., rankdeficient="NA")</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>There were issues with some computations   A: x1</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>There were issues with some computations   A: x10</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code></code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb156"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb156-1"><a href="#cb156-1" aria-hidden="true" tabindex="-1"></a> <span class="fu">collect_metrics</span>(third_cv_results)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 1 × 6
+  .metric .estimator  mean     n std_err .config        
+  &lt;chr&gt;   &lt;chr&gt;      &lt;dbl&gt; &lt;int&gt;   &lt;dbl&gt; &lt;chr&gt;          
+1 rmse    standard   0.498    10  0.0507 pre0_mod0_post0</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb158"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb158-1"><a href="#cb158-1" aria-hidden="true" tabindex="-1"></a>third_fit <span class="ot">&lt;-</span> third_wfl <span class="sc">|&gt;</span></span>
+<span id="cb158-2"><a href="#cb158-2" aria-hidden="true" tabindex="-1"></a> <span class="fu">fit</span>(seoul_train)</span>
+<span id="cb158-3"><a href="#cb158-3" aria-hidden="true" tabindex="-1"></a>sec_fit <span class="sc">|&gt;</span></span>
+<span id="cb158-4"><a href="#cb158-4" aria-hidden="true" tabindex="-1"></a> <span class="fu">tidy</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 24 × 5
+   term            estimate std.error statistic    p.value
+   &lt;chr&gt;              &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt;      &lt;dbl&gt;
+ 1 (Intercept)    -9.61e-16    0.0302 -3.18e-14 1.00      
+ 2 day_rainfall   -1.47e- 1    0.116  -1.27e+ 0 0.204     
+ 3 day_snowfall   -9.86e- 3    0.0333 -2.96e- 1 0.768     
+ 4 day_temp       -6.24e- 2    0.610  -1.02e- 1 0.919     
+ 5 day_humidity   -2.34e- 1    0.231  -1.01e+ 0 0.312     
+ 6 day_wind       -7.78e- 2    0.0381 -2.04e+ 0 0.0422    
+ 7 day_visibility  9.94e- 3    0.0499  1.99e- 1 0.842     
+ 8 day_dew_temp    5.36e- 1    0.701   7.64e- 1 0.446     
+ 9 day_solar_rad   2.84e- 1    0.0573  4.95e+ 0 0.00000139
+10 season_Spring  -1.85e- 1    0.263  -7.04e- 1 0.482     
+# ℹ 14 more rows</code></pre>
+</div>
+</div>
+<p>Second model appears best since it has the lowest mean RSME so we will use that for the final model!</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb160"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb160-1"><a href="#cb160-1" aria-hidden="true" tabindex="-1"></a>best_fit <span class="ot">&lt;-</span> <span class="fu">last_fit</span>(sec_wfl, <span class="at">split =</span> seoul_split, <span class="at">metrics =</span> <span class="fu">metric_set</span>(rmse))</span>
+<span id="cb160-2"><a href="#cb160-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb160-3"><a href="#cb160-3" aria-hidden="true" tabindex="-1"></a><span class="fu">collect_metrics</span>(best_fit)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 1 × 4
+  .metric .estimator .estimate .config        
+  &lt;chr&gt;   &lt;chr&gt;          &lt;dbl&gt; &lt;chr&gt;          
+1 rmse    standard       0.537 pre0_mod0_post0</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb162"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb162-1"><a href="#cb162-1" aria-hidden="true" tabindex="-1"></a><span class="fu">collect_predictions</span>(best_fit)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 92 × 5
+   .pred id               day_bike_rentals  .row .config        
+   &lt;dbl&gt; &lt;chr&gt;                       &lt;dbl&gt; &lt;int&gt; &lt;chr&gt;          
+ 1 -1.18 train/test split           -0.828     2 pre0_mod0_post0
+ 2 -1.41 train/test split           -0.956     3 pre0_mod0_post0
+ 3 -1.21 train/test split           -0.807     4 pre0_mod0_post0
+ 4 -1.00 train/test split           -1.01      6 pre0_mod0_post0
+ 5 -1.01 train/test split           -0.876     8 pre0_mod0_post0
+ 6 -1.28 train/test split           -1.30     17 pre0_mod0_post0
+ 7 -1.26 train/test split           -1.22     20 pre0_mod0_post0
+ 8 -1.14 train/test split           -1.10     21 pre0_mod0_post0
+ 9 -1.09 train/test split           -1.14     27 pre0_mod0_post0
+10 -1.03 train/test split           -1.03     33 pre0_mod0_post0
+# ℹ 82 more rows</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb164"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb164-1"><a href="#cb164-1" aria-hidden="true" tabindex="-1"></a>final_model <span class="ot">&lt;-</span> <span class="fu">extract_fit_parsnip</span>(best_fit<span class="sc">$</span>.workflow[[<span class="dv">1</span>]])</span>
+<span id="cb164-2"><a href="#cb164-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb164-3"><a href="#cb164-3" aria-hidden="true" tabindex="-1"></a><span class="fu">tidy</span>(final_model)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 24 × 5
+   term            estimate std.error statistic    p.value
+   &lt;chr&gt;              &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt;      &lt;dbl&gt;
+ 1 (Intercept)    -9.61e-16    0.0302 -3.18e-14 1.00      
+ 2 day_rainfall   -1.47e- 1    0.116  -1.27e+ 0 0.204     
+ 3 day_snowfall   -9.86e- 3    0.0333 -2.96e- 1 0.768     
+ 4 day_temp       -6.24e- 2    0.610  -1.02e- 1 0.919     
+ 5 day_humidity   -2.34e- 1    0.231  -1.01e+ 0 0.312     
+ 6 day_wind       -7.78e- 2    0.0381 -2.04e+ 0 0.0422    
+ 7 day_visibility  9.94e- 3    0.0499  1.99e- 1 0.842     
+ 8 day_dew_temp    5.36e- 1    0.701   7.64e- 1 0.446     
+ 9 day_solar_rad   2.84e- 1    0.0573  4.95e+ 0 0.00000139
+10 season_Spring  -1.85e- 1    0.263  -7.04e- 1 0.482     
+# ℹ 14 more rows</code></pre>
+</div>
+</div>
 
 </main>
 <!-- /main column -->
